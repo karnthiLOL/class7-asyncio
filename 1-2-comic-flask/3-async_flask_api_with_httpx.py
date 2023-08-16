@@ -12,14 +12,23 @@ app = Flask(__name__)
 
 # function converted to coroutine
 async def get_xkcd_image(session): # dont wait for the response of API
-    
+    comicid = randint(0, 1000)
+    called = await session.get(f'https://xkcd.com/{comicid}/info.0.json')
+    return called.json()['img']
 
 # function converted to coroutine
-async def get_multiple_images(number): 
-    async with 
+async def get_multiple_images(number):
+    async with httpx.AsyncClient() as session:
+        tasks = [get_xkcd_image(session) for _ in range(number)]
+        result = await asyncio.gather(*tasks, return_exceptions=True)
+    return result
 
 @app.get('/comic')
-async def hello(): 
+async def hello():
+    start = time.perf_counter()
+    urls = await get_multiple_images(10)
+    end = time.perf_counter()
+    return render_template('index.html', end=end, start=start, urls=urls)
     
 
 if __name__ == '__main__':
